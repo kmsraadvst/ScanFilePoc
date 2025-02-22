@@ -1,3 +1,6 @@
+
+using Domain.Entities;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -13,27 +16,20 @@ if (app.Environment.IsDevelopment()) {
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
 
-app.MapGet("/weatherforecast", () => {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
+
+app.MapGet("/document/{id:int}", (int id) => {
+    Console.WriteLine($"worker calls me Document Id[{id}]");
+    
+    return new Document { Id = id };
+});
+
+app.MapPut("/document", (Document document) => {
+    Console.WriteLine("document reçu pour update");
+    Console.WriteLine($"Id: {document.Id}, Statut: {document.StatutCode}, address: {document.Addresse}");
+
+    return Results.NoContent();
+});
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

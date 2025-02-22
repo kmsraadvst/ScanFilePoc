@@ -1,24 +1,20 @@
 using Domain.Contracts;
 using FileScanWorker.RabbitMQ;
+using FileScanWorker.Services;
 
 namespace FileScanWorker;
 
-public class Worker(ILogger<Worker> logger) : BackgroundService
+public class Worker(ILogger<Worker> logger, ConsumerService consumer) : BackgroundService
 {
-
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
 
-        await using var consumer = await ConsumerFactory.CreateConsumerAsync<DocumentToScanMessage>();
-
-        await consumer.SubscribeAsync();
+        await consumer.StartAsync();
         
         while (!stoppingToken.IsCancellationRequested) {
             
-                logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            
+            // logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
-            await Task.Delay(3000, stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
     }
 }

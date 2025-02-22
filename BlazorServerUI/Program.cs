@@ -18,6 +18,9 @@ builder.Services.AddSignalR();
 var p_documentToScan = await ProducerFactory.CreateProducerAsync<DocumentToScanMessage>();
 builder.Services.AddSingleton(_ => p_documentToScan);
 
+builder.Services.AddHttpClient("api", client => client.BaseAddress = new Uri("http://localhost:5118"));
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
