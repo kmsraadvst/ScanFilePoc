@@ -7,27 +7,20 @@ using RabbitMQ.Client.Events;
 
 namespace FileScanWorker.RabbitMQ;
 
-public class ConsumerService : IAsyncDisposable
+public class Consumer(FileScanService scanService, SignalRClientService signalrService) : IAsyncDisposable
 {
     private readonly ushort processorCount = (ushort)Environment.ProcessorCount;
-    private readonly IConnectionFactory _factory;
     private IConnection? _connection;
     private IChannel? _channel;
 
-    private readonly FileScanService _service;
-
-    public ConsumerService(FileScanService service) {
-        _factory = new ConnectionFactory
+    public async Task StartAsync() {
+        var factory = new ConnectionFactory
         {
             HostName = "localhost",
             ConsumerDispatchConcurrency = processorCount
         };
-
-        _service = service;
-    }
-
-    public async Task StartAsync() {
-        _connection = await _factory.CreateConnectionAsync();
+        
+        _connection = await factory.CreateConnectionAsync();
         _channel = await _connection.CreateChannelAsync();
 
         await _channel.QueueDeclareAsync(
@@ -70,9 +63,21 @@ public class ConsumerService : IAsyncDisposable
 
         Console.WriteLine(message);
 
-        Console.WriteLine("Start processing ...");
-        await _service.DocumentScanProcess(message);
-        Console.WriteLine("... Finish processing");
+        Console.WriteLine("Start Scan processing ...");
+        var document = await scanService.DocumentScanProcess(message);
+        Console.WriteLine("... Finish Scan processing");
+        if (document is null) return;
+        
+        Console.WriteLine("Start SignalR Notify Statut Updated ...");
+        var notification = new DocumentStatutUpdatedMessage
+        {
+            DemandeAvisId = document.DemandeAvisId,
+            DocumentId = document.Id,
+            DocumentStatut = document.StatutCode,
+            DocumentType = document.Type
+        };
+        await signalrService.SendStatutUpdated(notification);
+        Console.WriteLine("... Finish SignalR Notify");
 
         await _channel!.BasicAckAsync(ea.DeliveryTag, false);
     }

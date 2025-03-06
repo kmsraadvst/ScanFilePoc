@@ -6,32 +6,50 @@ namespace FileScanWorker.Services;
 
 public class FileScanService(IHttpClientFactory factory)
 {
-    public async Task DocumentScanProcess(DocumentToScanMessage message) {
-        Console.WriteLine("Start process SCAN FILE");
+    public async Task<Document?> DocumentScanProcess(DocumentToScanMessage message) {
+        Console.WriteLine("Démarer le processus SCAN FILE");
         
         var document = await GetDocument(message.DocumentId);
-        Console.WriteLine($"Worker receive from API Document Id[{document?.Id}]");
+        if (document is null)
+        {
+            Console.WriteLine($"Le document Id[{message.DocumentId}] n'existe pas");
+
+            return null;
+        }
+        Console.WriteLine($"Worker reçoit de l'API Document Id[{document.Id}]");
         
-        var path = await CalculatePath(document!);
-        Console.WriteLine("path calculated");
+        var path = await CalculatePath(document);
+        Console.WriteLine("chemin calculé");
 
         var isValidExtension = await CheckExtension(path);
-        Console.WriteLine($"Extension Checked: {isValidExtension}");
+        Console.WriteLine($"Extension vérifiée isValidExtension={isValidExtension}");
         
         var isValidScan = await CheckScanFile(path);
-        Console.WriteLine($"Scan Checked: {isValidScan}");
+        Console.WriteLine($"Scan (Antivirus) vérifié isValidScan={isValidScan}");
         
         var isValid = isValidExtension && isValidScan;
         Console.WriteLine($"le document est-il valide ? : {isValid}");
 
         if (isValid) {
-            await MoveToEprolex_File(document!);
+            await MoveToEprolex_File(document);
             Console.WriteLine("Document valide déplacé dans le File System définitif [EPROLEX_FILE]");
         }
 
-        await PutStatutAndAddress(isValid, document!);
+        await PutStatutAndAddress(isValid, document);
         Console.WriteLine("Mise à jour de la DB");
+        Console.WriteLine("Fin du processus SCAN FILE");
 
+        document.StatutCode = isValid ? "Valide" : "Corrompu";
+        document.Type = new Random().Next(0, 5) switch
+        {
+            0 => "Projet",
+            1 => "Mandat",
+            2 => "Annexe",
+            3 => "AutreDocument",
+            4 => "Confirmation"
+        };
+
+        return document;
     }
 
     private async Task<Document?> GetDocument(int documentId) {

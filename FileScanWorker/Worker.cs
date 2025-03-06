@@ -4,7 +4,7 @@ using FileScanWorker.Services;
 
 namespace FileScanWorker;
 
-public class Worker(ILogger<Worker> logger, ConsumerService consumer) : BackgroundService
+public class Worker(ILogger<Worker> logger, Consumer consumer) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
 
