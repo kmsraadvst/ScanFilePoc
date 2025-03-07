@@ -1,13 +1,17 @@
 @page "/Document"
 @using BlazorServerUI.RabbitMQ
 @using Domain.Contracts
+@using Domain.HubEvents
+@using Microsoft.AspNetCore.SignalR.Client
 
 @inject Producer<DocumentToScanMessage> Producer
+@inject NavigationManager Navigation
 
 <MudStack Class="pa-8 my-12 mx-20">
-    
-    <MudText Class="mb-12" Typo="Typo.h3">Document</MudText>
-    
+
+    <MudText Class="mb-4" Typo="Typo.h3">Document</MudText>
+    <MudText Class="mb-12" Typo="Typo.body1" Color="GetColor()">@_statutDocument</MudText>
+
     <MudButton
         Class="align-self-start"
         Variant="Variant.Filled"
@@ -15,12 +19,46 @@
         OnClick="OnDocumentAdded">
         Document is added
     </MudButton>
-    
+
 </MudStack>
 
 @code {
+    private string _statutDocument = "NoDocument";
+
+    protected override async Task OnInitializedAsync() {
+        HubConnection connection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/my-hub"))
+            .Build();
+
+        Console.WriteLine($"connection state 1: {connection.State}");
+
+        await connection.StartAsync();
+        Console.WriteLine($"connection state 2: {connection.State}");
+
+        connection.On<DocumentStatutUpdatedMessage>(
+            MyHubEvents.UpdateStatut,
+            async (message) => {
+                Console.WriteLine("dans le On");
+                _statutDocument = message.DocumentStatut;
+
+                await InvokeAsync(StateHasChanged);
+            });
+    }
 
     private async Task OnDocumentAdded() {
+        _statutDocument = "EnCours";
+        
         await Producer.PublishAsync(new DocumentToScanMessage(1045, 456));
     }
+
+    private Color GetColor() {
+        return _statutDocument switch
+        {
+            "EnCours" => Color.Warning,
+            "Corrompu" => Color.Error,
+            "Valide" => Color.Success,
+            _ => Color.Primary
+        };
+    }
+
 }

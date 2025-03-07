@@ -1,5 +1,5 @@
 using Domain.Contracts;
-using Domain.MethodsHub;
+using Domain.HubEvents;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace FileScanWorker.Services;
@@ -23,7 +23,7 @@ public class SignalRClientService : IAsyncDisposable
     {
         await StartSignalRConnection();
 
-        await _connection.SendAsync(MyHubMethods.ReceivedDocumentStatutUpdated, message);
+        await _connection.SendAsync(MyHubEvents.ReceiveUpdatedDocument, message);
     }
 
     public async ValueTask DisposeAsync()

@@ -55,14 +55,14 @@ public class FileScanService(IHttpClientFactory factory)
     private async Task<Document?> GetDocument(int documentId) {
 
         var httpClient = factory.CreateClient("api");
-        await Task.Delay(1000);
+        await Task.Delay(600);
 
         return await httpClient.GetFromJsonAsync<Document>($"/document/{documentId}");
     }
 
     private async Task<string> CalculatePath(Document document) {
         
-        await Task.Delay(1000);
+        await Task.Delay(600);
 
         return "path";
     }
@@ -70,9 +70,9 @@ public class FileScanService(IHttpClientFactory factory)
     private async Task<bool> CheckScanFile(string filePath) {
 
         
-        for (var i = 0; i < 12; i++) {
+        for (var i = 0; i < 6; i++) {
             Console.Write(". ");
-            await Task.Delay(400);
+            await Task.Delay(100);
         }
         Console.WriteLine(". ");
         
@@ -83,7 +83,7 @@ public class FileScanService(IHttpClientFactory factory)
     
     private async Task<bool> CheckExtension(string filePath) {
         
-        await Task.Delay(1000);
+        await Task.Delay(600);
         
         // CHECK EXTENSION
 
@@ -93,7 +93,7 @@ public class FileScanService(IHttpClientFactory factory)
     private async Task MoveToEprolex_File(Document document) {
         // MOVE TO EPROLEX_FILE
 
-        await Task.Delay(1000);
+        await Task.Delay(600);
     }
 
     private async Task PutStatutAndAddress(bool isValid, Document document) {
@@ -106,7 +106,7 @@ public class FileScanService(IHttpClientFactory factory)
             : "Pas d'adresse";
         
         var httpClient = factory.CreateClient("api");
-        await Task.Delay(1000);
+        await Task.Delay(600);
 
         await httpClient.PutAsJsonAsync<Document>($"/document", document);
     }
