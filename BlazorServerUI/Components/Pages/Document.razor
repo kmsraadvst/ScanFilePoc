@@ -30,15 +30,15 @@
             .WithUrl(Navigation.ToAbsoluteUri("/my-hub"))
             .Build();
 
-        Console.WriteLine($"connection state 1: {connection.State}");
+        Console.WriteLine($"connection SignalR state 1: {connection.State}");
 
         await connection.StartAsync();
-        Console.WriteLine($"connection state 2: {connection.State}");
+        Console.WriteLine($"connection SignalR state 2: {connection.State}");
 
         connection.On<DocumentStatutUpdatedMessage>(
             MyHubEvents.UpdateStatut,
             async (message) => {
-                Console.WriteLine("dans le On");
+                Console.WriteLine("Update Statut Document");
                 _statutDocument = message.DocumentStatut;
 
                 await InvokeAsync(StateHasChanged);
@@ -47,7 +47,8 @@
 
     private async Task OnDocumentAdded() {
         _statutDocument = "EnCours";
-        
+
+        Console.WriteLine("Envoie Message à RabbitMQ");
         await Producer.PublishAsync(new DocumentToScanMessage(1045, 456));
     }
 
