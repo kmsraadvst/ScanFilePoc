@@ -18,7 +18,7 @@ app.UseHttpsRedirection();
 
 
 
-app.MapGet("/document/{id:int}", (int id) => {
+app.MapGet("/document/{id}", (Guid id) => {
     Console.WriteLine($"worker calls me Document Id[{id}]");
     
     return new Document { Id = id };

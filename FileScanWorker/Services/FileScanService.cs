@@ -68,7 +68,7 @@ public class FileScanService(IHttpClientFactory factory)
         return document;
     }
 
-    private async Task<Document?> GetDocument(int documentId) {
+    private async Task<Document?> GetDocument(Guid documentId) {
 
         var httpClient = factory.CreateClient("api");
         await Task.Delay(600);

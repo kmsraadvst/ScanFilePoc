@@ -1,3 +1,3 @@
 namespace Domain.Contracts;
 
-public record DocumentToScanMessage(int DemandeAvisId, int DocumentId);
+public record DocumentToScanMessage(int DemandeAvisId, Guid DocumentId);
