@@ -1,11 +1,15 @@
 
-using Domain.Entities;
+
+
+using ScanFilePoc.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddScoped<DocumentRepository>();
 
 var app = builder.Build();
 
@@ -16,20 +20,7 @@ if (app.Environment.IsDevelopment()) {
 
 app.UseHttpsRedirection();
 
-
-
-app.MapGet("/document/{id}", (Guid id) => {
-    Console.WriteLine($"worker calls me Document Id[{id}]");
-    
-    return new Document { Id = id };
-});
-
-app.MapPut("/document", (Document document) => {
-    Console.WriteLine("document reçu pour update");
-    Console.WriteLine($"Id: {document.Id}, Statut: {document.StatutCode}, address: {document.Addresse}");
-
-    return Results.NoContent();
-});
+app.MapDocument();
 
 app.Run();
 

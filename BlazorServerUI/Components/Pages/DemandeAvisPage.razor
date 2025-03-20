@@ -1,0 +1,25 @@
+
+@page "/demande-avis"
+
+
+<MudText Typo="Typo.h3">Demande Avis</MudText>
+
+<MudStack Class="mt-12" Spacing="4">
+    
+    @foreach (var demandeAvisId in _demandeAvisIds)
+    {
+        <MudLink Href="@($"/document/{demandeAvisId}")">
+
+            <MudPaper Style="max-width: 640px" Class="mx-8 pa-6" Elevation="2">
+                <MudText Typo="Typo.h6">Demande Avis Id [@demandeAvisId]</MudText>
+                <MudDivider/>
+            </MudPaper>
+            
+        </MudLink>
+    }
+
+</MudStack>
+
+@code {
+    private readonly List<int> _demandeAvisIds = [112, 123, 124, 145, 136];
+}

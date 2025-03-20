@@ -56,7 +56,7 @@ public class FileScanService(IHttpClientFactory factory)
         
 
         document.StatutCode = isValid ? "Valide" : "Corrompu";
-        document.Type = new Random().Next(0, 5) switch
+        document.TypeCode = new Random().Next(0, 5) switch
         {
             0 => "Projet",
             1 => "Mandat",
@@ -117,9 +117,9 @@ public class FileScanService(IHttpClientFactory factory)
         var statut = isValid ? "Valide" : "Corrompu";
 
         document.StatutCode = statut;
-        document.Addresse = statut == "Valide" 
-            ? "address définitive dans EPROLEX_FILE" 
-            : "Pas d'adresse";
+        document.Chemin = statut == "Valide" 
+            ? "chemin définitive dans EPROLEX_FILE" 
+            : "Pas de chemin";
         
         var httpClient = factory.CreateClient("api");
         await Task.Delay(600);

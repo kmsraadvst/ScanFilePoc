@@ -1,6 +1,26 @@
 @ScanFilePoc_HostAddress = http://localhost:5118
 
-GET {{ScanFilePoc_HostAddress}}/weatherforecast/
-Accept: application/json
+GET {{ScanFilePoc_HostAddress}}/document
+
+
+###
+
+GET {{ScanFilePoc_HostAddress}}/document/1
+
+
+###
+
+POST {{ScanFilePoc_HostAddress}}/document
+Content-Type: application/json
+
+{
+    "demandeAvisId": 1,
+    "titre" : "mon nouveau document"
+}
+
+###
+
+DELETE {{ScanFilePoc_HostAddress}}/document/1
+
 
 ###

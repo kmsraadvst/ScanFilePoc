@@ -74,7 +74,7 @@ public class Consumer(FileScanService scanService, SignalRClientService signalrS
             DemandeAvisId = document.DemandeAvisId,
             DocumentId = document.Id,
             DocumentStatut = document.StatutCode,
-            DocumentType = document.Type
+            DocumentType = document.TypeCode
         };
         await signalrService.SendStatutUpdated(notification);
         Console.WriteLine("... Finish SignalR Notify");
