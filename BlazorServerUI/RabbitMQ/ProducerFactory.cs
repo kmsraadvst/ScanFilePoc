@@ -1,5 +1,3 @@
-using RabbitMQ.Client;
-
 namespace BlazorServerUI.RabbitMQ;
 
 public static class ProducerFactory

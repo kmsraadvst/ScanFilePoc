@@ -1,7 +1,7 @@
 
 @inject DocumentRepository Repo
 
-<MudText Typo="Typo.h5">Type: @Type</MudText>
+<MudText Class="mb-6" Typo="Typo.h5">Type: @Type</MudText>
 
 @foreach (var document in _documents) {
     <DocumentItem Document="document"/>
@@ -16,15 +16,22 @@
     private IEnumerable<Document> _documents = [];
 
     protected override async Task OnInitializedAsync() {
-        await LoadDocumentsAsync();
-
-        Connection.On(GetEventHub(), async () => await LoadDocumentsAsync(true));
-    }
-
-    private async Task LoadDocumentsAsync(bool isAsyncChanged = false) {
+        // await LoadDocumentsAsync();
         _documents = await Repo.GetAllAsync(Type, DemandeAvisId);
 
-        if (isAsyncChanged) await InvokeAsync(StateHasChanged);
+        Console.WriteLine($"In List Document Connection State :{Connection.State}");
+        Console.WriteLine($"Event Hub {GetEventHub()}");
+
+        Connection.On(GetEventHub(), async () => await LoadDocumentsAsync());
+    }
+
+    private async Task LoadDocumentsAsync() {
+        
+        Console.WriteLine($"Event Hub Received (callback) {GetEventHub()}");
+
+        _documents = await Repo.GetAllAsync(Type, DemandeAvisId);
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private string GetEventHub() => Type switch

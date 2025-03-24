@@ -1,10 +1,8 @@
-using Domain.Entities;
-
 namespace Domain.Utilities;
 
 public static class DocumentUtilities
 {
-    private const string RootPath = "FileTools";
+    private const string RootPath = "File_Temp";
     
     public static string GetPath(Document document) {
         var fileName =

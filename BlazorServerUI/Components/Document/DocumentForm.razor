@@ -1,5 +1,6 @@
 
 @inject DocumentRepository Repo
+@inject Producer<DocumentToScanMessage> Producer
 
 
 <MudForm>
@@ -133,6 +134,14 @@
             Console.WriteLine(e);
             await Repo.DeleteAsync(documentCreated.Id);
         }
+        
+        // ICI ON EST SÛR QUE LE DOCUMENT ET LE FICHIER EXISTE, ON ENVOI LE MESSAGE À RABBITMQ
+        var message = new DocumentToScanMessage(
+            DocumentId: documentCreated.Id, 
+            DemandeAvisId: documentCreated.DemandeAvisId, 
+            UtilisateurId: 2);
+
+        await Producer.PublishAsync(message);
 
         await _fileUpload.ClearAsync();
 

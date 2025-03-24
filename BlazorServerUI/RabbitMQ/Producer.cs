@@ -1,7 +1,3 @@
-using System.Text;
-using System.Text.Json;
-using RabbitMQ.Client;
-
 namespace BlazorServerUI.RabbitMQ;
 
 public class Producer<T>(IConnection connection, IChannel channel) : IAsyncDisposable

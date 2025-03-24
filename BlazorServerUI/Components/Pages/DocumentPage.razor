@@ -11,32 +11,37 @@
     Document de la demande d'avis [@DemandeAvisId]
 </MudText>
 
-<DocumentForm DemandeAvisId="DemandeAvisId" />
+@if (_connection.State == HubConnectionState.Connected)
+{
+    <DocumentForm DemandeAvisId="DemandeAvisId" />
 
-<MudGrid>
+    <MudDivider/>
     
-    <MudItem xs="4">
-    <DocumentList
-        DemandeAvisId="DemandeAvisId"
-        Type="@TypeDocument.Projet"
-        Connection="@_connection"/>
-    </MudItem>
-
-    <MudItem xs="4">
-    <DocumentList
-        DemandeAvisId="DemandeAvisId"
-        Type="@TypeDocument.Mandat"
-        Connection="@_connection"/>
-    </MudItem>
-
-    <MudItem xs="4">
-    <DocumentList
-        DemandeAvisId="DemandeAvisId"
-        Type="@TypeDocument.AnnexeProjet"
-        Connection="@_connection"/>
-    </MudItem>
+    <MudGrid Spacing="4" Class="pa-4 mt-4">
     
-</MudGrid>
+        <MudItem xs="4">
+            <DocumentList
+                DemandeAvisId="DemandeAvisId"
+                Type="@TypeDocument.Projet"
+                Connection="@_connection"/>
+        </MudItem>
+
+        <MudItem xs="4">
+            <DocumentList
+                DemandeAvisId="DemandeAvisId"
+                Type="@TypeDocument.Mandat"
+                Connection="@_connection"/>
+        </MudItem>
+
+        <MudItem xs="4">
+            <DocumentList
+                DemandeAvisId="DemandeAvisId"
+                Type="@TypeDocument.AnnexeProjet"
+                Connection="@_connection"/>
+        </MudItem>
+    
+    </MudGrid>
+}
 
 
 
@@ -47,6 +52,7 @@
     private HubConnection _connection = default!;
     
     protected override async Task OnInitializedAsync() {
+        
         _connection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/my-hub"))
             .Build();
@@ -55,6 +61,8 @@
 
         await _connection.StartAsync();
         Console.WriteLine($"connection SignalR state 2: {_connection.State}");
+
+        await _connection.SendAsync("AddToGroup", $"{DemandeAvisId}");
     }
 
     public async ValueTask DisposeAsync() {

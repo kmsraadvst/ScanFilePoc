@@ -1,17 +1,12 @@
-using System.Text.Json;
-using Domain.HubEvents;
-using Microsoft.AspNetCore.SignalR;
 
 namespace BlazorServerUI.Hubs;
 
 public class MyHub : Hub
 {
-    public async Task ReceiveUpdatedDocument(DocumentStatutUpdatedMessage message)
+    public async Task AddToGroup(string groupName)
     {
-        var messageStr = JsonSerializer.Serialize(message, JsonSerializerOptions.Web);
-
-        Console.WriteLine(messageStr);
-
-        // await Clients.All.SendAsync(MyHubEvents.UpdateStatut, message);
+        Console.WriteLine($"Adding To Group {groupName}");
+        
+        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
     }
 }
