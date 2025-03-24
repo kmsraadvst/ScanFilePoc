@@ -1,0 +1,118 @@
+
+@inject DocumentRepository Repo
+
+
+<MudPaper Class="pa-8">
+    
+    <MudGrid>
+
+        <MudItem xs="4">
+            <MudChip Variant="Variant.Text" Color="Color.Primary">
+                @Document.TypeCode
+            </MudChip>
+        </MudItem>
+
+        <MudItem >
+            <MudText Color="@(GetColor(Document.StatutCode))">
+                @Document.StatutCode
+            </MudText>
+        </MudItem>
+
+        <MudItem >
+            <MudIconButton
+                Icon="@Icons.Material.Filled.Delete"
+                Color="Color.Error"
+                OnClick="@DeleteDocument"/>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText Typo="Typo.h6">@Document.Titre</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText Style="color:#6c6c6c" Typo="Typo.body2">
+                @Document.NomFichier
+            </MudText>
+        </MudItem>
+
+        <MudItem xs="6">
+            <MudText Typo="Typo.caption">
+                @Document.ContentType
+            </MudText>
+        </MudItem>
+
+        <MudItem xs="6">
+            <MudText Typo="Typo.caption">
+                @(Document.Taille / 1024) Ko
+            </MudText>
+        </MudItem>
+        
+    </MudGrid>
+
+</MudPaper>
+
+<MudCard>
+    <MudCardHeader>
+        
+        <CardHeaderContent>
+
+            <MudChip Variant="Variant.Text" Color="Color.Primary">
+                @Document.TypeCode
+            </MudChip>
+
+            <MudText Typo="Typo.h6">@Document.Titre</MudText>
+
+            <MudText Color="@(GetColor(Document.StatutCode))">
+                @Document.StatutCode
+            </MudText>
+
+        </CardHeaderContent>
+        
+        <CardHeaderActions>
+            <MudIconButton
+                Icon="@Icons.Material.Filled.Delete"
+                Color="Color.Error"
+                OnClick="@DeleteDocument"/>
+        </CardHeaderActions>
+    </MudCardHeader>
+    
+    <MudCardContent>
+        
+        <MudText Style="color:#6c6c6c" Typo="Typo.body2">
+            @Document.NomFichier
+        </MudText>
+        
+        <MudText Typo="Typo.caption">
+            @Document.ContentType @(Document.Taille / 1024) Ko
+        </MudText>
+        
+    </MudCardContent>
+    
+</MudCard>
+
+@code {
+    [Parameter] public Document Document { get; set; } = new();
+
+    private async Task DeleteDocument() {
+        
+        try {
+            
+            File.Delete(DocumentUtilities.GetPath(Document));
+        }
+        catch (Exception e) {
+            Console.WriteLine(e.Message);
+            return;
+        }
+
+        await Repo.DeleteAsync(Document.Id);
+    }
+    
+    private Color GetColor(string statusCode) =>
+        statusCode switch
+        {
+            "EnCours" => Color.Warning,
+            "Corrompu" => Color.Error,
+            "Valide" => Color.Success,
+            _ => Color.Primary
+        };
+}

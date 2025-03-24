@@ -1,9 +1,3 @@
-using BlazorServerUI.Components;
-using BlazorServerUI.Hubs;
-using BlazorServerUI.RabbitMQ;
-using Domain.Contracts;
-using MudBlazor.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -14,11 +8,13 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMudServices();
 
 builder.Services.AddSignalR();
+builder.Services.AddHttpClient("api", client => client.BaseAddress = new Uri("http://localhost:5118"));
 
 var p_documentToScan = await ProducerFactory.CreateProducerAsync<DocumentToScanMessage>();
 builder.Services.AddSingleton(_ => p_documentToScan);
 
-builder.Services.AddHttpClient("api", client => client.BaseAddress = new Uri("http://localhost:5118"));
+builder.Services.AddSingleton<DocumentRepository>();
+
 
 
 var app = builder.Build();

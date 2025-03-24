@@ -1,0 +1,144 @@
+
+@inject DocumentRepository Repo
+
+
+<MudForm>
+    <MudGrid Class="pa-8 my-12 mx-20" Style="width: 840px">
+
+        <MudItem xs="6">
+
+            <MudTextField T="string" @bind-Value="_titre" Label="Titre"/>
+
+        </MudItem>
+
+        <MudItem xs="6">
+
+            <MudSelect @bind-Value="_typeDocument" T="string" Label="Type de document">
+
+                @foreach (var type in TypeDocument.All) {
+                    <MudSelectItem T="string" Value="type">@type</MudSelectItem>
+                }
+
+            </MudSelect>
+
+        </MudItem>
+
+
+        <MudItem xs="4" Class="align-self-center">
+
+            <MudFileUpload @ref="_fileUpload" T="IBrowserFile" FilesChanged="DisplayFile">
+
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Dark"
+                               StartIcon="@Icons.Material.Filled.CloudUpload">
+                        Upload Files
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+
+        </MudItem>
+
+        <MudItem xs="8">
+
+            @if (_file is not null) {
+                <MudPaper Class="pa-4 grey" Outlined Elevation="3">
+
+                    <MudStack Row AlignItems="AlignItems.Center">
+
+                        <MudText Typo="Typo.body1" Color="Color.Primary">
+                            @_file.Name
+                        </MudText>
+
+                        <MudIconButton
+                            Class="ml-auto"
+                            Icon="@Icons.Material.Filled.Close"
+                            OnClick="DeleteFile"/>
+
+                    </MudStack>
+
+                </MudPaper>
+            }
+        </MudItem>
+
+        <MudItem xs="12" Class="mt-6">
+
+            <MudButton
+                Class="pa-3"
+                Variant="Variant.Filled"
+                Color="Color.Primary"
+                OnClick="AddDocument"
+                Size="Size.Large">
+                Add Document
+            </MudButton>
+        </MudItem>
+
+    </MudGrid>
+
+</MudForm>
+
+@code {
+    [Parameter] public int DemandeAvisId { get; set; }
+
+    private MudFileUpload<IBrowserFile> _fileUpload = default!;
+
+    private string _titre = string.Empty;
+    private string _typeDocument = string.Empty;
+
+    private IBrowserFile? _file;
+    
+    
+    private async Task DeleteFile() {
+        await _fileUpload.ClearAsync();
+
+        _file = null;
+    }
+
+    private void DisplayFile(IBrowserFile file) => _file = file;
+
+    private async Task AddDocument() {
+        
+        if (_file is null) {
+            Console.WriteLine("File is null. No file selected");
+            return;
+        }
+
+        var documentToCreate = new Document()
+        {
+            Titre = _titre,
+            Taille = _file.Size,
+            NomFichier = _file.Name,
+            ContentType = _file.ContentType,
+            DemandeAvisId = DemandeAvisId,
+            StatutCode = StatutDocument.Verification,
+            TypeCode = _typeDocument,
+            Extension = GetExtension(_file.Name)
+        };
+
+        var documentCreated = await Repo.CreateAsync(documentToCreate);
+
+        if (documentCreated is null) {
+            Console.WriteLine("document created is null");
+            return;
+        }
+
+        try {
+            if (!Directory.Exists("File_Temp")) Directory.CreateDirectory("File_Temp");
+
+            await using var fs = File.Create(Path.Combine("File_Temp", $"{documentCreated.Id}-{_file.Name}"));
+
+            await _file.OpenReadStream().CopyToAsync(fs);
+        }
+        catch (Exception e) {
+            Console.WriteLine(e);
+            await Repo.DeleteAsync(documentCreated.Id);
+        }
+
+        await _fileUpload.ClearAsync();
+
+        _file = null;
+    }
+    
+    private static string GetExtension(string fileName) => Path.GetExtension(fileName)[1..];
+
+}

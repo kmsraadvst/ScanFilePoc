@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace ScanFilePoc.Endpoints;
 
 public static class DocumentEndpoint
@@ -11,13 +13,16 @@ public static class DocumentEndpoint
             : Results.NotFound()
       );
       
-      app.MapGet("/document", async (DocumentRepository repo) =>
-      
-         await repo.GetAllAsync()
+      app.MapGet(
+         "/demande-avis/{demandeAvisId:int}/document", 
+         async (int demandeAvisId,[FromQuery] string typeCode, DocumentRepository repo) 
+            => await repo.GetAllAsync(typeCode, demandeAvisId)
       );
       
       app.MapPost("/Document", async (Document document, DocumentRepository repo) =>
       {
+         Console.WriteLine($"API received document {document.Dump()}");
+         
          var id = await repo.CreateAsync(document);
 
          var documentCreated = await repo.GetByIdAsync(id);

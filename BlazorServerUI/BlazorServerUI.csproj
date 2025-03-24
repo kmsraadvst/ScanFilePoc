@@ -16,4 +16,20 @@
       <ProjectReference Include="..\Domain\Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="File_Temp\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="File_Temp\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Remove="File_Temp\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="File_Temp\**" />
+    </ItemGroup>
+
 </Project>

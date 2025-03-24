@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Domain.Contracts;
 using Domain.HubEvents;
 using Microsoft.AspNetCore.SignalR;
 
@@ -13,6 +12,6 @@ public class MyHub : Hub
 
         Console.WriteLine(messageStr);
 
-        await Clients.All.SendAsync(MyHubEvents.UpdateStatut, message);
+        // await Clients.All.SendAsync(MyHubEvents.UpdateStatut, message);
     }
 }

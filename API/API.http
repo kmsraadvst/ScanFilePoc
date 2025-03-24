@@ -1,6 +1,6 @@
 @ScanFilePoc_HostAddress = http://localhost:5118
 
-GET {{ScanFilePoc_HostAddress}}/document
+GET {{ScanFilePoc_HostAddress}}/demande-avis/124/document?typeCode=Projet
 
 
 ###

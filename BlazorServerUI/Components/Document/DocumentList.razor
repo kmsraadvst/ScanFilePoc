@@ -1,0 +1,38 @@
+
+@inject DocumentRepository Repo
+
+<MudText Typo="Typo.h5">Type: @Type</MudText>
+
+@foreach (var document in _documents) {
+    <DocumentItem Document="document"/>
+}
+
+
+@code {
+    [Parameter] public string Type { get; set; } = string.Empty;
+    [Parameter] public int DemandeAvisId { get; set; }
+    [Parameter] public HubConnection Connection { get; set; } = default!;
+
+    private IEnumerable<Document> _documents = [];
+
+    protected override async Task OnInitializedAsync() {
+        await LoadDocumentsAsync();
+
+        Connection.On(GetEventHub(), async () => await LoadDocumentsAsync(true));
+    }
+
+    private async Task LoadDocumentsAsync(bool isAsyncChanged = false) {
+        _documents = await Repo.GetAllAsync(Type, DemandeAvisId);
+
+        if (isAsyncChanged) await InvokeAsync(StateHasChanged);
+    }
+
+    private string GetEventHub() => Type switch
+    {
+        _ when Type == TypeDocument.Projet => MyHubEvents.RefreshProjet,
+        _ when Type == TypeDocument.Mandat => MyHubEvents.RefreshMandat,
+        _ when Type == TypeDocument.AnnexeProjet => MyHubEvents.RefreshAnnexe,
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
+}

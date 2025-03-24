@@ -23,7 +23,7 @@ public class SignalRClientService : IAsyncDisposable
     {
         await StartSignalRConnection();
 
-        await _connection.SendAsync(MyHubEvents.ReceiveUpdatedDocument, message);
+        // await _connection.SendAsync(MyHubEvents.ReceiveUpdatedDocument, message);
     }
 
     public async ValueTask DisposeAsync()
