@@ -3,6 +3,11 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# HUKAR CHANGE
+File_Temp/
+
+# END HUKAR CHANGE
+
 # dotenv files
 .env
 
