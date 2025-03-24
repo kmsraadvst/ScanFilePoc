@@ -1,6 +1,6 @@
-namespace Domain.HubEvents;
+namespace Domain.Enums;
 
-public static class MyHubEvents
+public static class HubEvents
 {
     public const string RefreshProjet = "RefreshProjet";
     public const string RefreshMandat = "RefreshMandat";

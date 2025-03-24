@@ -1,5 +1,4 @@
-using Domain.Contracts;
-using Domain.HubEvents;
+using Domain.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace FileScanWorker.Services;
@@ -19,11 +18,12 @@ public class SignalRClientService : IAsyncDisposable
         }
     }
     
-    public async Task SendStatutUpdated(DocumentStatutUpdatedMessage message)
+    public async Task SendStatutUpdated(DocumentStatutUpdatedNotification notification)
     {
         await StartSignalRConnection();
 
-        // await _connection.SendAsync(MyHubEvents.ReceiveUpdatedDocument, message);
+        Console.WriteLine($"Before send notification {notification}");
+        await _connection.SendAsync(HubMethods.DocumentStatutUpdated, notification);
     }
 
     public async ValueTask DisposeAsync()

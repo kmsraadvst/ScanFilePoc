@@ -1,7 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Domain.Contracts;
-using FileScanWorker.Services;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -48,6 +46,7 @@ public class Consumer(FileScanService scanService, SignalRClientService signalrS
     }
 
     private async Task HandleMessage(object sender, BasicDeliverEventArgs ea) {
+        
         Console.WriteLine("Message is handling");
 
         var body = ea.Body.ToArray();
@@ -69,13 +68,13 @@ public class Consumer(FileScanService scanService, SignalRClientService signalrS
         if (document is null) return;
         
         Console.WriteLine("Start SignalR Notify Statut Updated ...");
-        var notification = new DocumentStatutUpdatedMessage
-        {
-            DemandeAvisId = document.DemandeAvisId,
-            DocumentId = document.Id,
-            DocumentStatut = document.StatutCode,
-            DocumentType = document.TypeCode
-        };
+        var notification = new DocumentStatutUpdatedNotification
+        (
+            DemandeAvisId: document.DemandeAvisId,
+            DocumentId: document.Id,
+            DocumentStatut: document.StatutCode,
+            TypeDocument: document.TypeCode
+        );
         await signalrService.SendStatutUpdated(notification);
         Console.WriteLine("... Finish SignalR Notify");
 

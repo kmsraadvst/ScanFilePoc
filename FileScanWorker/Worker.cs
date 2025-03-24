@@ -1,7 +1,3 @@
-using Domain.Contracts;
-using FileScanWorker.RabbitMQ;
-using FileScanWorker.Services;
-
 namespace FileScanWorker;
 
 public class Worker(ILogger<Worker> logger, Consumer consumer) : BackgroundService

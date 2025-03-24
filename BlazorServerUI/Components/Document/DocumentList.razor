@@ -20,26 +20,18 @@
         _documents = await Repo.GetAllAsync(Type, DemandeAvisId);
 
         Console.WriteLine($"In List Document Connection State :{Connection.State}");
-        Console.WriteLine($"Event Hub {GetEventHub()}");
+        Console.WriteLine($"Event Hub {TypeDocument.GetEventHub(Type)}");
 
-        Connection.On(GetEventHub(), async () => await LoadDocumentsAsync());
+        Connection.On(TypeDocument.GetEventHub(Type), async () => await LoadDocumentsAsync());
     }
 
     private async Task LoadDocumentsAsync() {
         
-        Console.WriteLine($"Event Hub Received (callback) {GetEventHub()}");
+        Console.WriteLine($"Event Hub Received (callback) {TypeDocument.GetEventHub(Type)}");
 
         _documents = await Repo.GetAllAsync(Type, DemandeAvisId);
 
         await InvokeAsync(StateHasChanged);
     }
-
-    private string GetEventHub() => Type switch
-    {
-        _ when Type == TypeDocument.Projet => MyHubEvents.RefreshProjet,
-        _ when Type == TypeDocument.Mandat => MyHubEvents.RefreshMandat,
-        _ when Type == TypeDocument.AnnexeProjet => MyHubEvents.RefreshAnnexe,
-        _ => throw new ArgumentOutOfRangeException()
-    };
 
 }

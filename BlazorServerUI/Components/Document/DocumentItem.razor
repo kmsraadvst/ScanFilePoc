@@ -22,10 +22,15 @@
         </CardHeaderContent>
 
         <CardHeaderActions>
-            <MudIconButton
-                Icon="@Icons.Material.Filled.Delete"
-                Color="Color.Error"
-                OnClick="@DeleteDocument"/>
+            
+            @* @if (Document.StatutCode != StatutDocument.Verification) *@
+            @* { *@
+                <MudIconButton
+                    Icon="@Icons.Material.Filled.Delete"
+                    Color="Color.Error"
+                    OnClick="@DeleteDocument"/>
+            @* } *@
+
         </CardHeaderActions>
     </MudCardHeader>
 
@@ -54,7 +59,10 @@
     {
         try
         {
-            File.Delete(DocumentUtilities.GetPath(Document));
+            Console.WriteLine($"Supprimer {DocumentUtilities.GetTempPath(Document)}");
+            File.Delete(DocumentUtilities.GetTempPath(Document));
+            
+            // TODO avec GetFilePath une fois que le scan a déplacé les fichiers
         }
         catch (Exception e)
         {

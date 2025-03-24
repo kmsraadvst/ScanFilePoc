@@ -62,7 +62,7 @@
         await _connection.StartAsync();
         Console.WriteLine($"connection SignalR state 2: {_connection.State}");
 
-        await _connection.SendAsync("AddToGroup", $"{DemandeAvisId}");
+        await _connection.SendAsync(HubMethods.AddToGroup, $"{DemandeAvisId}");
     }
 
     public async ValueTask DisposeAsync() {

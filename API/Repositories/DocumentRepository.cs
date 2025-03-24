@@ -78,6 +78,25 @@ public class DocumentRepository
         return id;
     }
 
+    public async Task<int> UpdateStatutAndAddressAsync(Document documentToUpdate)
+    {
+        await using var connection = new SqlConnection(ConnectionString);
+        
+        var sql = """
+                    UPDATE Document SET
+                      StatutCode = @StatutCode
+                      ,Chemin = @Chemin
+                      WHERE Id = @Id
+                  """;
+
+        return await connection.ExecuteAsync(sql, new
+        {
+            Id = documentToUpdate.Id,
+            StatutCode = documentToUpdate.StatutCode,
+            Chemin = documentToUpdate.Chemin
+        });
+    }
+
     public async Task<int> DeleteAsync(int id)
     {
         await using var connection = new SqlConnection(ConnectionString);

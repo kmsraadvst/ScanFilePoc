@@ -1,10 +1,6 @@
-using System.Net.Http.Json;
-using Domain.Contracts;
-using Domain.Entities;
-
 namespace FileScanWorker.Services;
 
-public class FileScanService(IHttpClientFactory factory)
+public class FileScanService(DocumentRepository repo)
 {
     public async Task<Document?> DocumentScanProcess(DocumentToScanMessage message) {
         Console.WriteLine("Démarer le processus SCAN FILE");
@@ -12,7 +8,7 @@ public class FileScanService(IHttpClientFactory factory)
         Document? document;
 
         try {
-            document = await GetDocument(message.DocumentId);
+            document = await repo.GetByIdAsync(message.DocumentId);
             if (document is null)
             {
                 Console.WriteLine($"Le document Id[{message.DocumentId}] n'existe pas");
@@ -43,9 +39,11 @@ public class FileScanService(IHttpClientFactory factory)
             await MoveToEprolex_File(document);
             Console.WriteLine("Document valide déplacé dans le File System définitif [EPROLEX_FILE]");
         }
-
+        
+        document.StatutCode = isValid ? "Valide" : "Corrompu";
+        
         try {
-            await PutStatutAndAddress(isValid, document);
+            await repo.UpdateStatutAndAddressAsync(document);
             Console.WriteLine("Mise à jour de la DB");
             Console.WriteLine("Fin du processus SCAN FILE");
         }
@@ -55,26 +53,12 @@ public class FileScanService(IHttpClientFactory factory)
         }
         
 
-        document.StatutCode = isValid ? "Valide" : "Corrompu";
-        document.TypeCode = new Random().Next(0, 5) switch
-        {
-            0 => "Projet",
-            1 => "Mandat",
-            2 => "Annexe",
-            3 => "AutreDocument",
-            4 => "Confirmation"
-        };
+        
 
         return document;
     }
 
-    private async Task<Document?> GetDocument(Guid documentId) {
-
-        var httpClient = factory.CreateClient("api");
-        await Task.Delay(600);
-
-        return await httpClient.GetFromJsonAsync<Document>($"/document/{documentId}");
-    }
+    
 
     private async Task<string> CalculatePath(Document document) {
         
@@ -112,20 +96,7 @@ public class FileScanService(IHttpClientFactory factory)
         await Task.Delay(600);
     }
 
-    private async Task PutStatutAndAddress(bool isValid, Document document) {
-        
-        var statut = isValid ? "Valide" : "Corrompu";
-
-        document.StatutCode = statut;
-        document.Chemin = statut == "Valide" 
-            ? "chemin définitive dans EPROLEX_FILE" 
-            : "Pas de chemin";
-        
-        var httpClient = factory.CreateClient("api");
-        await Task.Delay(600);
-
-        await httpClient.PutAsJsonAsync<Document>($"/document", document);
-    }
+    
 
     
 }

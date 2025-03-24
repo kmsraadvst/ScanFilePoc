@@ -1,6 +1,3 @@
-using Domain.Entities;
-using Domain.Enums;
-using Domain.HubEvents;
 
 namespace BlazorServerUI.Repositories;
 
@@ -29,8 +26,8 @@ public class DocumentRepository(IHttpClientFactory factory, IHubContext<MyHub> c
         Console.WriteLine($"response status code: {response.StatusCode}");
 
         await context.Clients.Group($"{documentToCreate.DemandeAvisId}")
-            .SendAsync(GetEventHub(documentToCreate.TypeCode));
-        Console.WriteLine($"Envoie de l'event hub : {GetEventHub(documentToCreate.TypeCode)}");
+            .SendAsync(TypeDocument.GetEventHub(documentToCreate.TypeCode));
+        Console.WriteLine($"Envoie de l'event hub : {TypeDocument.GetEventHub(documentToCreate.TypeCode)}");
 
         return await response.Content.ReadFromJsonAsync<Document>();
     }
@@ -45,16 +42,10 @@ public class DocumentRepository(IHttpClientFactory factory, IHubContext<MyHub> c
         var rowsAffected = await client.DeleteFromJsonAsync<int>($"/Document/{id}");
         
         await context.Clients.Group($"{documentToDelete.DemandeAvisId}")
-            .SendAsync(GetEventHub(documentToDelete.TypeCode));
+            .SendAsync(TypeDocument.GetEventHub(documentToDelete.TypeCode));
         
         return rowsAffected;
     }
     
-    private string GetEventHub(string type) => type switch
-    {
-        _ when type == TypeDocument.Projet => MyHubEvents.RefreshProjet,
-        _ when type == TypeDocument.Mandat => MyHubEvents.RefreshMandat,
-        _ when type == TypeDocument.AnnexeProjet => MyHubEvents.RefreshAnnexe,
-        _ => throw new ArgumentOutOfRangeException()
-    };
+    
 }

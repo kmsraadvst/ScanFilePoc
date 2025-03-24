@@ -29,6 +29,15 @@ public static class DocumentEndpoint
 
          return Results.Created($"/document/{id}", documentCreated);
       });
+
+      app.MapPut("/Document", async (Document document, DocumentRepository repo) =>
+      {
+         Console.WriteLine($"API received document to update {document.Dump()}");
+
+         await repo.UpdateStatutAndAddressAsync(document);
+
+         return Results.NoContent();
+      });
       
       app.MapDelete("/document/{id:int}", async (int id, DocumentRepository repo) =>
          
