@@ -55,6 +55,7 @@
         
         _connection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/my-hub"))
+            .WithAutomaticReconnect()
             .Build();
 
         Console.WriteLine($"connection SignalR state 1: {_connection.State}");
