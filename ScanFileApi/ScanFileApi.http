@@ -1,0 +1,10 @@
+@ScanFileApi_HostAddress = http://localhost:5063
+
+POST {{ScanFileApi_HostAddress}}/scan-file
+Content-Type: application/json
+
+{
+  "path" : "path for scanning"
+}
+
+###

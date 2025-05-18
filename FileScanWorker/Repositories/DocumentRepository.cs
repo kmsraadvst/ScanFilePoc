@@ -19,6 +19,7 @@ public class DocumentRepository(IHttpClientFactory factory)
         var httpClient = factory.CreateClient("api");
         await Task.Delay(600);
 
+        // TODO: Utiliser un  dto avec seulement documentId et statut
         await httpClient.PutAsJsonAsync($"/document", document);
     }
 }

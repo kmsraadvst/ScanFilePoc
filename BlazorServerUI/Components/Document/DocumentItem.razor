@@ -15,6 +15,10 @@
                 <MudText Color="@(GetColor(Document.StatutCode))">
                     @Document.StatutCode
                 </MudText>
+                
+                <MudText Color="Color.Primary">
+                    Id: @Document.Id
+                </MudText>
             </MudStack>
             
             <MudText Typo="Typo.h6">@Document.Titre</MudText>

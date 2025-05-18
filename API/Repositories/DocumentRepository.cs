@@ -2,7 +2,7 @@ namespace ScanFilePoc.Repositories;
 
 public class DocumentRepository
 {
-    private const string ConnectionString =
+    private const string ConnectionString1 =
         "Server=W2k22-Devel-T01; Database=FileScanDB; User ID=filescanuser; Password=filescan123.; Encrypt=False;";
 
     // Local CDE
@@ -10,8 +10,9 @@ public class DocumentRepository
         "Server=localhost; Database=ScanFileDB; User ID=sa; Password=huk@r2Xmen99; Encrypt=False;";
 
     // Local Maison
-    private const string ConnectionString1 =
-        "Server=localhost; Database=FileScanDB; User ID=sa; Password=Huk@r99_Dba; Encrypt=False;";
+    private const string ConnectionString =
+        // "Server=localhost; Database=FileScanDB; User ID=sa; Password=Huk@r99_Dba; Encrypt=False;";
+        "Server=localhost; Database=FileScanDB; User ID=sa; Password=huk@r2Xmen99; Encrypt=False;";
 
 
     public async Task<Document?> GetByIdAsync(int id)
@@ -80,6 +81,7 @@ public class DocumentRepository
 
     public async Task<int> UpdateStatutAndAddressAsync(Document documentToUpdate)
     {
+        // TODO: Utiliser un  dto avec seulement documentId et statut
         await using var connection = new SqlConnection(ConnectionString);
         
         var sql = """
@@ -91,9 +93,9 @@ public class DocumentRepository
 
         return await connection.ExecuteAsync(sql, new
         {
-            Id = documentToUpdate.Id,
-            StatutCode = documentToUpdate.StatutCode,
-            Chemin = documentToUpdate.Chemin
+            documentToUpdate.Id,
+            documentToUpdate.StatutCode,
+            documentToUpdate.Chemin
         });
     }
 
