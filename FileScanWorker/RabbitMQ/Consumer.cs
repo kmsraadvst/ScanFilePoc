@@ -1,14 +1,6 @@
-using System.Text;
-using System.Text.Json;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-
 namespace FileScanWorker.RabbitMQ;
 
-public class Consumer(
-    FileScanService scanService, 
-    SignalRClientService signalrService,
-    DocumentRepository repository) : IAsyncDisposable
+public class Consumer(ProcessMessageService processMessageService) : IAsyncDisposable
 {
     private readonly ushort processorCount = (ushort)Environment.ProcessorCount;
     private IConnection? _connection;
@@ -33,7 +25,7 @@ public class Consumer(
         );
 
         await _channel.QueueDeclareAsync(
-            queue: "error",
+            queue: "error-scanfile",
             durable: true,
             autoDelete: false,
             exclusive: false
@@ -58,62 +50,53 @@ public class Consumer(
 
     private async Task HandleMessage(object sender, BasicDeliverEventArgs ea)
     {
-        Console.WriteLine("Message is handling");
+        Console.WriteLine("Le message est en cours de traitement ...");
 
         var innerChannel = ((AsyncEventingBasicConsumer)sender).Channel;
-
-        var body = ea.Body.ToArray();
-        var messageStr = Encoding.UTF8.GetString(body);
-        var message = JsonSerializer.Deserialize<DocumentToScanMessage>(messageStr);
-        
-        if (message is null)
-        {
-            // HANDLE ERROR
-            Console.WriteLine("Le message est null");
-            await innerChannel.BasicAckAsync(ea.DeliveryTag, false);
-            return;
-        }
-
-        Console.WriteLine(message);
+        var message = GetMessageFromBody<DocumentToScanMessage>(ea.Body);
+        Console.WriteLine($"message reçu: {message}");
 
         try
         {
             Console.WriteLine("Start Scan processing ...");
-            var document = await scanService.DocumentScanProcess(message);
+            await processMessageService.ProcessAsync(message);
             Console.WriteLine("... Finish Scan processing");
-
-            Console.WriteLine("Start SignalR Notify Statut Updated ...");
-            var notification = new DocumentStatutUpdatedNotification
-            (
-                DemandeAvisId: document.DemandeAvisId,
-                DocumentId: document.Id,
-                DocumentStatut: document.StatutCode,
-                TypeDocument: document.TypeCode
-            );
-            await signalrService.SendStatutUpdated(notification);
-            Console.WriteLine("... Finish SignalR Notify");
 
             await innerChannel.BasicAckAsync(ea.DeliveryTag, false);
         }
         catch (Exception e)
         {
             Console.WriteLine($"Problème avec le scan {e.Message}, envoyer le message dans l'ErrorQueue");
+            
             // ENVOYER UN MESSAGE DANS L'ERROR_QUEUE
-            var errorMessage = new ErrorMessage(
-                $"Problème avec le scan {e.Message}, envoyer le message dans l'ErrorQueue",
-                DateTime.Now.ToLongDateString(),
-                message
-            );
-
-            var errorMessageStr = JsonSerializer.Serialize(errorMessage);
-
-            var errorBody = Encoding.UTF8.GetBytes(errorMessageStr);
-            await innerChannel.BasicPublishAsync("", "error", errorBody);
+            await PublishErrorMessageAsync(e.Message, innerChannel, message);
             
             // SORTIR LE MESSAGE DE LA QUEUE PRINCIPALE : ÉVITER LES BOUCLES INFINIES
             await innerChannel.BasicAckAsync(ea.DeliveryTag, false);
 
         }
+    }
+
+    private T GetMessageFromBody<T>(ReadOnlyMemory<byte> body) where T : class
+    {
+        var bodyArray = body.ToArray();
+        var bodyStr = Encoding.UTF8.GetString(bodyArray);
+
+        return JsonSerializer.Deserialize<T>(bodyStr) ?? throw new Exception("Le message est null");
+    }
+
+    private async Task PublishErrorMessageAsync(string exceptionMessage, IChannel channel, DocumentToScanMessage message)
+    {
+        var errorMessage = new ErrorMessage(
+            $"Problème avec le scan {exceptionMessage}, envoyer le message dans l'ErrorQueue",
+            $"{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}",
+            message
+        );
+
+        var errorMessageStr = JsonSerializer.Serialize(errorMessage);
+
+        var errorBody = Encoding.UTF8.GetBytes(errorMessageStr);
+        await channel.BasicPublishAsync("", "error-scanfile", errorBody);
     }
 
     public async ValueTask DisposeAsync()
