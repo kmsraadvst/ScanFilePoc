@@ -27,13 +27,13 @@
 
         <CardHeaderActions>
             
-            @if (Document.StatutCode != StatutDocument.Verification)
-            {
+            @* @if (Document.StatutCode != StatutDocument.Verification) *@
+            @* { *@
                 <MudIconButton
                     Icon="@Icons.Material.Filled.Delete"
                     Color="Color.Error"
                     OnClick="@DeleteDocument"/>
-            }
+            @* } *@
 
         </CardHeaderActions>
     </MudCardHeader>

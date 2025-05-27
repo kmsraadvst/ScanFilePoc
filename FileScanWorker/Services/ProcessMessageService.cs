@@ -26,7 +26,7 @@ public class ProcessMessageService(
         
         // 3. SCANNER LES MALWARES
         Console.WriteLine("Scanner les malwares");
-        var isScanValid = await fileScanService.ScanAsync(document);
+        var isScanValid = await fileScanService.ScanFakeAsync();
         Console.WriteLine($"Le fichier est safe: {isScanValid}");
 
         

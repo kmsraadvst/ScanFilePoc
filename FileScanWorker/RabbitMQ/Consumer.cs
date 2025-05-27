@@ -11,7 +11,8 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
         var factory = new ConnectionFactory
         {
             HostName = "localhost",
-            ConsumerDispatchConcurrency = processorCount
+            ConsumerDispatchConcurrency = processorCount,
+            AutomaticRecoveryEnabled = true,
         };
 
         _connection = await factory.CreateConnectionAsync();

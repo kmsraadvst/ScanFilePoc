@@ -10,12 +10,13 @@ public class SignalRClientService : IAsyncDisposable
         .WithAutomaticReconnect()
         .Build();
 
-    private async Task StartSignalRConnection()
+    public async Task StartSignalRConnection()
     {
-        if (_connection.State == HubConnectionState.Disconnected)
+        if (_connection.State != HubConnectionState.Disconnected)
         {
-            await _connection.StartAsync();
+            return;
         }
+        await _connection.StartAsync();
     }
     
     public async Task SendDocumentUpdated(Document document)
@@ -28,7 +29,7 @@ public class SignalRClientService : IAsyncDisposable
             TypeDocument: document.TypeCode
         );
         
-        await StartSignalRConnection();
+        // await StartSignalRConnection();
 
         Console.WriteLine($"Avant l'envoie de la notification {notification}");
         await _connection.SendAsync(HubMethods.DocumentStatutUpdated, notification);

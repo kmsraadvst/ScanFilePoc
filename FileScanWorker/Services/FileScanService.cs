@@ -42,5 +42,12 @@ public class FileScanService(DocumentRepository repo, IHttpClientFactory factory
             }
         }
     }
+
+    public async Task<bool> ScanFakeAsync()
+    {
+        await Task.Delay(600);
+
+        return new Random().Next(1, 10) <= 8;
+    }
     
 }
