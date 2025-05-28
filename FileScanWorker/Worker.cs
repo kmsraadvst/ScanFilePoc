@@ -5,7 +5,6 @@ public class Worker(ILogger<Worker> logger, Consumer consumer, SignalRClientServ
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
 
         await consumer.StartAsync();
-        await signalR.StartSignalRConnection();
         
         while (!stoppingToken.IsCancellationRequested) {
             

@@ -17,19 +17,26 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
 
         _connection = await factory.CreateConnectionAsync();
         _channel = await _connection.CreateChannelAsync();
-
+        
         await _channel.QueueDeclareAsync(
-            queue: "document-to-scan",
+            queue: "dlq-scanfile",
             durable: true,
             autoDelete: false,
             exclusive: false
         );
-
+        
+        var mainQueueArgs = new Dictionary<string, object?>
+        {
+            { "x-dead-letter-exchange", "" }, 
+            { "x-dead-letter-routing-key", "dlq-scanfile" }
+        };
+        
         await _channel.QueueDeclareAsync(
-            queue: "error-scanfile",
+            queue: "document-to-scan",
             durable: true,
             autoDelete: false,
-            exclusive: false
+            exclusive: false,
+            arguments: mainQueueArgs
         );
 
         await _channel.BasicQosAsync(
@@ -68,13 +75,13 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
         catch (Exception e)
         {
             Console.WriteLine($"Problème avec le scan {e.Message}, envoyer le message dans l'ErrorQueue");
-            
-            // ENVOYER UN MESSAGE DANS L'ERROR_QUEUE
-            await PublishErrorMessageAsync(e.Message, innerChannel, message);
-            
-            // SORTIR LE MESSAGE DE LA QUEUE PRINCIPALE : ÉVITER LES BOUCLES INFINIES
-            await innerChannel.BasicAckAsync(ea.DeliveryTag, false);
 
+            // SORTIR LE MESSAGE DE LA QUEUE PRINCIPALE : ÉVITER LES BOUCLES INFINIES
+            await innerChannel.BasicNackAsync(
+                deliveryTag: ea.DeliveryTag,
+                multiple: false,
+                requeue: false
+            );
         }
     }
 
@@ -86,19 +93,6 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
         return JsonSerializer.Deserialize<T>(bodyStr) ?? throw new Exception("Le message est null");
     }
 
-    private async Task PublishErrorMessageAsync(string exceptionMessage, IChannel channel, DocumentToScanMessage message)
-    {
-        var errorMessage = new ErrorMessage(
-            $"Problème avec le scan {exceptionMessage}, envoyer le message dans l'ErrorQueue",
-            $"{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}",
-            message
-        );
-
-        var errorMessageStr = JsonSerializer.Serialize(errorMessage);
-
-        var errorBody = Encoding.UTF8.GetBytes(errorMessageStr);
-        await channel.BasicPublishAsync("", "error-scanfile", errorBody);
-    }
 
     public async ValueTask DisposeAsync()
     {

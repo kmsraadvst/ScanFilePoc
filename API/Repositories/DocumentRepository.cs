@@ -2,15 +2,15 @@ namespace ScanFilePoc.Repositories;
 
 public class DocumentRepository
 {
-    private const string ConnectionString1 =
+    private const string ConnectionString =
         "Server=W2k22-Devel-T01; Database=FileScanDB; User ID=filescanuser; Password=filescan123.; Encrypt=False;";
 
     // Local CDE
-    private const string ConnectionString0 =
+    private const string ConnectionString1 =
         "Server=localhost; Database=ScanFileDB; User ID=sa; Password=huk@r2Xmen99; Encrypt=False;";
 
     // Local Maison
-    private const string ConnectionString =
+    private const string ConnectionString0 =
         // "Server=localhost; Database=FileScanDB; User ID=sa; Password=Huk@r99_Dba; Encrypt=False;";
         "Server=localhost; Database=FileScanDB; User ID=sa; Password=huk@r2Xmen99; Encrypt=False;";
 

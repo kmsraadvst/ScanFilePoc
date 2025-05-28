@@ -14,10 +14,24 @@ public static class ProducerFactory
         var channel = await connection.CreateChannelAsync();
 
         await channel.QueueDeclareAsync(
+            queue: "dlq-scanfile",
+            durable: true,
+            autoDelete: false,
+            exclusive: false
+        );
+        
+        var mainQueueArgs = new Dictionary<string, object?>
+        {
+            { "x-dead-letter-exchange", "" }, 
+            { "x-dead-letter-routing-key", "dlq-scanfile" }
+        };
+        
+        await channel.QueueDeclareAsync(
             queue: "document-to-scan",
             durable: true,
+            autoDelete: false,
             exclusive: false,
-            autoDelete: false
+            arguments: mainQueueArgs
         );
 
         return new Producer<T>(connection, channel);

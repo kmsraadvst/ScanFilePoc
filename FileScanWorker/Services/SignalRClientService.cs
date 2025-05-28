@@ -10,15 +10,50 @@ public class SignalRClientService : IAsyncDisposable
         .WithAutomaticReconnect()
         .Build();
 
-    public async Task StartSignalRConnection()
+    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+
+    public SignalRClientService()
     {
-        if (_connection.State != HubConnectionState.Disconnected)
+        _connection.Reconnected += connectionId =>
         {
-            return;
-        }
-        await _connection.StartAsync();
+            Console.WriteLine($"signalr reconnected connectionId:{connectionId}");
+        
+            return Task.CompletedTask;
+        };
+        
+        _connection.Reconnecting += e =>
+        {
+            Console.WriteLine($"signalr is reconnecting exception message:{e?.Message}");
+        
+            return Task.CompletedTask;
+        };
+        
+        _connection.Closed += e =>
+        {
+            Console.WriteLine($"signalr is closed exception message:{e?.Message}");
+
+            return Task.CompletedTask;
+        };
     }
-    
+
+    private async Task EnsureSignalRConnectionStarted()
+    {
+        await _semaphore.WaitAsync();
+
+        try
+        {
+            if (_connection.State == HubConnectionState.Disconnected)
+            {
+                await _connection.StartAsync();
+                Console.WriteLine("SignalR is started");
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     public async Task SendDocumentUpdated(Document document)
     {
         var notification = new DocumentStatutUpdatedNotification
@@ -28,8 +63,8 @@ public class SignalRClientService : IAsyncDisposable
             DocumentStatut: document.StatutCode,
             TypeDocument: document.TypeCode
         );
-        
-        // await StartSignalRConnection();
+
+        await EnsureSignalRConnectionStarted();
 
         Console.WriteLine($"Avant l'envoie de la notification {notification}");
         await _connection.SendAsync(HubMethods.DocumentStatutUpdated, notification);
@@ -38,5 +73,6 @@ public class SignalRClientService : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _connection.DisposeAsync();
+        _semaphore.Dispose();
     }
 }

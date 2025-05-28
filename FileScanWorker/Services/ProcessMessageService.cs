@@ -12,6 +12,10 @@ public class ProcessMessageService(
     {
         Console.WriteLine("Début du Processing du message ...");
         
+        // TEST DLQ 
+        if (new Random().Next(1, 5) == 1) throw new Exception("BOUM FOR Dead Letter Queue");
+        
+        
         // 1. RÉCUPÉRER LE DOCUMENT EN DB
         Console.WriteLine($"Allez chercher le document [{message.DocumentId}] en DB");
         var document = await repo.GetByIdAsync(message.DocumentId);
@@ -28,9 +32,12 @@ public class ProcessMessageService(
         Console.WriteLine("Scanner les malwares");
         var isScanValid = await fileScanService.ScanFakeAsync();
         Console.WriteLine($"Le fichier est safe: {isScanValid}");
+        
+        // 4. SUPPRIMER LE FICHIER OU LE DÉPLACER DANS LE DOSSIER SAFE
+        // TODO MoveFileService
 
         
-        // 4. METTRE À JOUR LE DOCUMENT EN DB
+        // 5. METTRE À JOUR LE DOCUMENT EN DB
         var isValid = isExtensionValid && isScanValid;
         
         Console.WriteLine($"Document [{document.Id}] est valide ? {isValid}");
@@ -40,12 +47,11 @@ public class ProcessMessageService(
         await repo.UpdatAsync(document);
 
         
-        // 5. NOTIFIER LE NOUVEAU STATUT VIA SIGNALR
+        // 6. NOTIFIER LE NOUVEAU STATUT VIA SIGNALR
         Console.WriteLine("Notifier le chnagement de statut du document par SignalR");
         await signalRService.SendDocumentUpdated(document);
         
         
-
         Console.WriteLine("... fin du Processing #############\n");
     }
 }
