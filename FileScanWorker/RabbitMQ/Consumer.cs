@@ -6,6 +6,10 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
     private IConnection? _connection;
     private IChannel? _channel;
 
+    private const string QueueName = "queue-file-worker";
+    private const string ExchangeName = "exchange-file-worker";
+    private const string ErrorQueueName = "dlq-file-worker";
+
     public async Task StartAsync()
     {
         var factory = new ConnectionFactory
@@ -19,7 +23,7 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
         _channel = await _connection.CreateChannelAsync();
         
         await _channel.QueueDeclareAsync(
-            queue: "dlq-scanfile",
+            queue: ErrorQueueName,
             durable: true,
             autoDelete: false,
             exclusive: false
@@ -27,12 +31,12 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
         
         var mainQueueArgs = new Dictionary<string, object?>
         {
-            { "x-dead-letter-exchange", "" }, 
-            { "x-dead-letter-routing-key", "dlq-scanfile" }
+            { "x-dead-letter-exchange", ExchangeName }, 
+            { "x-dead-letter-routing-key", ErrorQueueName }
         };
         
         await _channel.QueueDeclareAsync(
-            queue: "document-to-scan",
+            queue: QueueName,
             durable: true,
             autoDelete: false,
             exclusive: false,
@@ -50,7 +54,7 @@ public class Consumer(ProcessMessageService processMessageService) : IAsyncDispo
         consumer.ReceivedAsync += HandleMessage;
 
         await _channel.BasicConsumeAsync(
-            queue: "document-to-scan",
+            queue: QueueName,
             autoAck: false,
             consumer: consumer
         );

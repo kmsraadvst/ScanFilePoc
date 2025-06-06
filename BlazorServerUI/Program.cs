@@ -10,17 +10,17 @@ builder.Services.AddMudServices();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient("api", client => client.BaseAddress = new Uri("http://localhost:5118"));
 
-var p_documentToScan = await ProducerFactory.CreateProducerAsync<DocumentToScanMessage>();
-builder.Services.AddSingleton(_ => p_documentToScan);
+builder.Services.Configure<ProducersOptions>(builder.Configuration.GetSection("ProducersOptions"));
+builder.Services.AddScoped<Producer<DocumentToScanMessage>>();
 
 builder.Services.AddSingleton<DocumentRepository>();
-
 
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment()) {
+if (!app.Environment.IsDevelopment())
+{
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
