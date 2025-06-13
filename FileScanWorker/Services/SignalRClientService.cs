@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace FileScanWorker.Services;
 
-public class SignalRClientService : IAsyncDisposable
+public class SignalRClientService<TNotification> : IAsyncDisposable where TNotification : class
 {
     private readonly HubConnection _connection = new HubConnectionBuilder()
         .WithUrl("http://localhost:5216/my-hub")
         .WithAutomaticReconnect()
         .Build();
 
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+    private readonly SemaphoreSlim _semaphore = new(1);
 
     public SignalRClientService()
     {
@@ -54,20 +54,12 @@ public class SignalRClientService : IAsyncDisposable
         }
     }
 
-    public async Task SendDocumentUpdated(Document document)
+    public async Task NotifyAsync(string hubMethod, TNotification notification)
     {
-        var notification = new DocumentStatutUpdatedNotification
-        (
-            DemandeAvisId: document.DemandeAvisId,
-            DocumentId: document.Id,
-            DocumentStatut: document.StatutCode,
-            TypeDocument: document.TypeCode
-        );
-
         await EnsureSignalRConnectionStarted();
 
         Console.WriteLine($"Avant l'envoie de la notification {notification}");
-        await _connection.SendAsync(HubMethods.DocumentStatutUpdated, notification);
+        await _connection.SendAsync(hubMethod, notification);
     }
 
     public async ValueTask DisposeAsync()

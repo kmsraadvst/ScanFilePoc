@@ -1,6 +1,6 @@
-namespace Domain.Contracts;
+namespace Domain.Contracts.Notifications;
 
-public record DocumentStatutUpdatedNotification
+public record DocumentUpdatedNotification
 (
     int DemandeAvisId,
     int DocumentId,

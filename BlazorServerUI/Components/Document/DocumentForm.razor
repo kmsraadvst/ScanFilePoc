@@ -1,7 +1,10 @@
+@using Domain.Contracts.Messages
+@using Domain.Exceptions
 
 @inject DocumentRepository Repo
-@inject Producer<DocumentToScanMessage> Producer
+@inject Producer<DocumentMessage> Producer
 @inject ILogger<DocumentForm> Logger
+@inject ISnackbar Snackbar
 
 
 <MudForm>
@@ -17,7 +20,8 @@
 
             <MudSelect @bind-Value="_typeDocument" T="string" Label="Type de document">
 
-                @foreach (var type in TypeDocument.All) {
+                @foreach (var type in TypeDocument.All)
+                {
                     <MudSelectItem T="string" Value="type">@type</MudSelectItem>
                 }
 
@@ -43,7 +47,8 @@
 
         <MudItem xs="8">
 
-            @if (_file is not null) {
+            @if (_file is not null)
+            {
                 <MudPaper Class="pa-4 grey" Outlined Elevation="3">
 
                     <MudStack Row AlignItems="AlignItems.Center">
@@ -83,16 +88,17 @@
     [Parameter] public int DemandeAvisId { get; set; }
 
     private MudFileUpload<IBrowserFile> _fileUpload = default!;
-    
+
     private const long MaxAllowedSize = 1024 * 1024 * 1024;
 
     private string _titre = string.Empty;
     private string _typeDocument = string.Empty;
 
     private IBrowserFile? _file;
-    
-    
-    private async Task DeleteFile() {
+
+
+    private async Task DeleteFile()
+    {
         await _fileUpload.ClearAsync();
 
         _file = null;
@@ -100,14 +106,29 @@
 
     private void DisplayFile(IBrowserFile file) => _file = file;
 
-    private async Task AddDocument() {
-        
-        if (_file is null) {
-            Console.WriteLine("File is null. No file selected");
+    private async Task AddDocument()
+    {
+        if (_file is null)
+        {
+            Logger.LogWarning("Aucun fichier sélectionné.");
+            Snackbar.Add("Veuillez sélectionner un fichier.", Severity.Warning);
             return;
         }
 
-        var documentToCreate = new Document()
+        // 1. Vérifier RabbitMQ
+        try
+        {
+            await Producer.EnsureIsStartedAsync();
+        }
+        catch (RabbitMqUnavailableException ex)
+        {
+            Logger.LogError(ex, "RabbitMQ non disponible.");
+            Snackbar.Add("Le serveur de messagerie est indisponible. Réessayez plus tard.", Severity.Error);
+            return;
+        }
+
+        // 2. Créer le document en base
+        var documentToCreate = new Document
         {
             Titre = _titre,
             Taille = _file.Size,
@@ -119,46 +140,79 @@
             Extension = GetExtension(_file.Name)
         };
 
-        var documentCreated = await Repo.CreateAsync(documentToCreate);
+        Document? documentCreated = null;
 
-        if (documentCreated is null) {
-            Console.WriteLine("document created is null");
+        try
+        {
+            documentCreated = await Repo.CreateAsync(documentToCreate);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la création du document en base.");
+            Snackbar.Add("Erreur lors de l'enregistrement du document.", Severity.Error);
             return;
         }
 
-        try {
-            if (!Directory.Exists(DocumentUtilities.TempRootPath))
-            {
-                Directory.CreateDirectory(DocumentUtilities.TempRootPath);
-            }
+        if (documentCreated is null)
+        {
+            Logger.LogError("Le document n'a pas été créé (CreateAsync a retourné null).");
+            Snackbar.Add("Impossible d'enregistrer le document.", Severity.Error);
+            return;
+        }
 
-            await using var fs = File.Create(DocumentUtilities.GetTempPath(documentCreated));
+        // 3. Sauvegarder le fichier
+        var tempPath = DocumentUtilities.GetTempPath(documentCreated);
 
+        try
+        {
+            EnsureTempDirectoryExists();
+            await using var fs = File.Create(tempPath);
             await _file.OpenReadStream(MaxAllowedSize).CopyToAsync(fs);
         }
-        catch (Exception e) {
-            Console.WriteLine("Something wrong is a happened");
-            Console.WriteLine(e.Message);
-            
-            Logger.LogError("file doesn't be uploaded");
-            
-            File.Delete(DocumentUtilities.GetTempPath(documentCreated));
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                $"Erreur lors de l'enregistrement du fichier sur le disque. Roolback sur le Document {documentCreated.Id}"
+            );
+            Snackbar.Add("Erreur lors de l'enregistrement du fichier.", Severity.Error);
+
+            File.Delete(tempPath);
             await Repo.DeleteAsync(documentCreated.Id);
+            return;
         }
-        
-        // ICI ON EST SÛR QUE LE DOCUMENT ET LE FICHIER EXISTE, ON ENVOI LE MESSAGE À RABBITMQ
-        var message = new DocumentToScanMessage(
-            DocumentId: documentCreated.Id, 
-            DemandeAvisId: documentCreated.DemandeAvisId, 
+
+        // 4. Envoyer le message à RabbitMQ
+        var message = new DocumentMessage(
+            DocumentId: documentCreated.Id,
+            DemandeAvisId: documentCreated.DemandeAvisId,
             UtilisateurId: 2);
 
-        await Producer.PublishAsync(message);
+        try
+        {
+            await Producer.PublishAsync(message);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi du message RabbitMQ.");
+            Snackbar.Add("Le document a été enregistré mais n'a pas pu être traité automatiquement.", Severity.Warning);
+            // ici, tu pourrais marquer le document pour un retry ultérieur si besoin
+        }
 
+        // 5. Nettoyage UI
         await _fileUpload.ClearAsync();
-
         _file = null;
+
+        Snackbar.Add("Document ajouté avec succès.", Severity.Success);
     }
-    
+
+    private void EnsureTempDirectoryExists()
+    {
+        if (!Directory.Exists(DocumentUtilities.TempRootPath))
+            Directory.CreateDirectory(DocumentUtilities.TempRootPath);
+    }
+
+
     private static string GetExtension(string fileName) => Path.GetExtension(fileName)[1..];
 
 }

@@ -1,9 +1,11 @@
 
+using Domain.Contracts.Notifications;
+
 namespace BlazorServerUI.Hubs;
 
 public class MyHub : Hub
 {
-    public async Task DocumentStatutUpdated(DocumentStatutUpdatedNotification notification)
+    public async Task DocumentStatutUpdated(DocumentUpdatedNotification notification)
     {
         var eventHub = TypeDocument.GetEventHub(notification.TypeDocument);
 

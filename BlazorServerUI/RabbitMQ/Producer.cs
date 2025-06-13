@@ -1,32 +1,39 @@
-using Microsoft.Extensions.Options;
 
 namespace BlazorServerUI.RabbitMQ;
 
-public class Producer<TMessage> where TMessage : class
+public class Producer<TMessage>
+    where TMessage : class
 {
-    private readonly ConnectionFactory factory = new()
-    {
-        HostName = "localhost",
-    };
+    private readonly ILogger<Producer<TMessage>> _logger;
 
-    private IConnection? connection;
-    private IChannel? channel;
+    private readonly ConnectionFactory _factory;
+
+    private IConnection? _connection;
+    private IChannel? _channel;
 
     private readonly SemaphoreSlim semaphore = new(1);
-    private bool queueIsDeclared;
-    
-    private readonly string exchangeName;
-    private readonly string queueName;
-    private readonly string errorQueueName;
-    private readonly ILogger<Producer<TMessage>> _logger;
-    public Producer(ILogger<Producer<TMessage>> logger, IOptions<ProducersOptions> options)
+    private bool _topologyIsDeclared;
+
+    private readonly string _exchangeName;
+    private readonly string _queueName;
+
+    public Producer(ILogger<Producer<TMessage>> logger, RabbitMqProducerSettings settings)
     {
         _logger = logger;
 
-        var option = options.Value.First(option => option.TypeMessage == typeof(TMessage).Name);
-        exchangeName = option.ExchangeName;
-        queueName = option.QueueName;
-        errorQueueName = option.ErrorQueueName;
+        _factory = new()
+        {
+            HostName = settings.HostName,
+            AutomaticRecoveryEnabled = true,
+        };
+
+
+        var workerConfiguration = settings
+            .WorkerConfigurations
+            .First(wc => wc.TypeMessage == typeof(TMessage).Name);
+
+        _exchangeName = workerConfiguration.Exchange;
+        _queueName = workerConfiguration.Queue;
     }
 
 
@@ -36,33 +43,38 @@ public class Producer<TMessage> where TMessage : class
 
         try
         {
-            if (connection is null || !connection.IsOpen)
+            if (_connection is null || !_connection.IsOpen)
             {
-                connection = await factory.CreateConnectionAsync();
+                _connection = await _factory.CreateConnectionAsync();
             }
 
-            if (channel is null || !channel.IsOpen)
+            if (_channel is null || !_channel.IsOpen)
             {
-                channel = await connection.CreateChannelAsync();
+                _channel = await _connection.CreateChannelAsync();
             }
-            
-            if (!queueIsDeclared)
-            {
-                await DeclareTopology(channel);
 
-                queueIsDeclared = true;
+            if (!_topologyIsDeclared)
+            {
+                await DeclareTopologyAsync(_channel);
+
+                _topologyIsDeclared = true;
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "RabbitMQ exception lors de la connexion ou de l'initialisation");
+            throw new RabbitMqUnavailableException("Le serveur RabbitMQ est temporairement indisponible", ex);
         }
         finally
         {
             semaphore.Release();
         }
     }
-    
+
     public async Task PublishAsync(TMessage message)
     {
         await EnsureIsStartedAsync();
-        
+
         var messageStr = JsonSerializer.Serialize(message);
 
         var body = Encoding.UTF8.GetBytes(messageStr);
@@ -73,11 +85,11 @@ public class Producer<TMessage> where TMessage : class
             Persistent = true,
         };
 
-        if (channel is not null)
+        if (_channel is not null)
         {
-            await channel.BasicPublishAsync(
-                exchange: exchangeName,
-                routingKey: queueName,
+            await _channel.BasicPublishAsync(
+                exchange: _exchangeName,
+                routingKey: _queueName,
                 mandatory: true,
                 basicProperties: properties,
                 body: body
@@ -85,64 +97,28 @@ public class Producer<TMessage> where TMessage : class
         }
     }
 
-    private async Task DeclareTopology(IChannel c)
+    private async Task DeclareTopologyAsync(IChannel c)
     {
         // DECLARATION DE L'EXCHANGE
         await c.ExchangeDeclareAsync(
-            exchange: exchangeName,
+            exchange: _exchangeName,
             type: ExchangeType.Direct,
             durable: true
         );
-        
-        // DECLARATION DES QUEUES
-        await c.QueueDeclareAsync(
-            queue: errorQueueName,
-            durable: true,
-            autoDelete: false,
-            exclusive: false
-        );
-
-        var mainQueueArgs = new Dictionary<string, object?>
-        {
-            { "x-dead-letter-exchange", exchangeName },
-            { "x-dead-letter-routing-key", errorQueueName }
-        };
-
-        await c.QueueDeclareAsync(
-            queue: queueName,
-            durable: true,
-            autoDelete: false,
-            exclusive: false,
-            arguments: mainQueueArgs
-        );
-        
-        // DECLARATION DES BINDINGS
-        await c.QueueBindAsync(
-            queue: queueName,
-            exchange: exchangeName,
-            routingKey: queueName
-        );
-        
-        await c.QueueBindAsync(
-            queue: errorQueueName,
-            exchange: exchangeName,
-            routingKey: errorQueueName
-        );
-
     }
-
+    
     public async ValueTask DisposeAsync()
     {
-        if (channel is not null)
+        if (_channel is { IsOpen: true })
         {
-            await channel.CloseAsync();
-            await channel.DisposeAsync();
+            await _channel.CloseAsync();
+            await _channel.DisposeAsync();
         }
 
-        if (connection is not null)
+        if (_connection is { IsOpen: true })
         {
-            await connection.CloseAsync();
-            await connection.DisposeAsync();
+            await _connection.CloseAsync();
+            await _connection.DisposeAsync();
         }
 
         _logger.LogDebug("Producer properly disposed");

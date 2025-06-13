@@ -1,3 +1,5 @@
+using Domain.Contracts.Messages;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -10,8 +12,11 @@ builder.Services.AddMudServices();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient("api", client => client.BaseAddress = new Uri("http://localhost:5118"));
 
-builder.Services.Configure<ProducersOptions>(builder.Configuration.GetSection("ProducersOptions"));
-builder.Services.AddScoped<Producer<DocumentToScanMessage>>();
+// builder.Services.Configure<ProducersOptions>(builder.Configuration.GetSection("ProducersOptions"));
+builder.Services.AddSingleton(builder.Configuration.GetSection("RabbitMq").Get<RabbitMqProducerSettings>()!);
+
+
+builder.Services.AddScoped<Producer<DocumentMessage>>();
 
 builder.Services.AddSingleton<DocumentRepository>();
 

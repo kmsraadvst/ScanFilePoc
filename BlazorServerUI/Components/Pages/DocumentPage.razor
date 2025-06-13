@@ -1,15 +1,17 @@
 
 @page "/document/{DemandeAvisId:int}"
 
+@using Domain.Contracts.Messages
 @implements IAsyncDisposable
 
-@inject Producer<DocumentToScanMessage> Producer
+@inject Producer<DocumentMessage> Producer
 @inject NavigationManager Navigation
 
 
 <MudText Class="mt-4 ml-4" Typo="Typo.h3">
     Document de la demande d'avis [@DemandeAvisId]
 </MudText>
+
 
 @if (_connection.State == HubConnectionState.Connected)
 {
@@ -44,13 +46,12 @@
 }
 
 
-
 @code {
     
     [Parameter] public int DemandeAvisId { get; set; }
 
     private HubConnection _connection = default!;
-    
+
     protected override async Task OnInitializedAsync() {
         
         _connection = new HubConnectionBuilder()
